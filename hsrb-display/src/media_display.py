@@ -23,16 +23,19 @@ class MediaDisplay(Node):
         self.bridge = CvBridge()
 
         # Get the package share directory where images are stored
-        package_share = get_package_share_directory('hsrb-display')
+        # package_share = get_package_share_directory('hsrb-display')
 
         # Path to the folder that contains the display images
-        self.media_dir = os.path.join(package_share, "display_images")
+        # self.media_dir = os.path.join(package_share, "display_images")
+        
+        # hardcoded path
+        self.media_dir = "/home/administrator/hsr_display_ws/src/hsrb_display/hsrb_display/display_images"
+
 
         # Mapping: ID number to image file name
         self.media_map = {
-            0: "walle.png",
-            1: "default_logo.png",
-            # You can extend this dictionary with more entries
+            0: "default_logo.png",
+            # add new mappings
         }
 
         # Publisher that sends images to the HSR head display
@@ -61,27 +64,38 @@ class MediaDisplay(Node):
     # -------------------------------------------------------------------------
 
     def text_callback(self, msg):
-        # Extract the received text
         text = msg.data
         self.get_logger().info(f"Received text: {text}")
 
-        # Create a blank image (black background)
+        # Create blank image
         img = np.zeros((600, 800, 3), dtype=np.uint8)
 
-        # Add the text onto the image
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(
-            img,
-            text,
-            (50, 300),      # text position
-            font,
-            1.2,            # font scale
-            (255, 255, 255),# white color
-            2,              # thickness
-            cv2.LINE_AA     # anti-aliased line
-        )
+        # Word wrapping
+        max_chars = 20
+        lines = [text[i:i + max_chars] for i in range(0, len(text), max_chars)]
 
-        # Publish the generated OpenCV image as a ROS2 Image message
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 2.0
+        thickness = 3
+        color = (255, 255, 255)
+
+        # Starting vertical position
+        y = 150
+
+        for line in lines:
+            cv2.putText(
+                img,
+                line,
+                (50, y),
+                font,
+                font_scale,
+                color,
+                thickness,
+                cv2.LINE_AA
+            )
+            y += 90  # line height spacing
+
+        # Publish image
         self.publish_opencv_image(img)
 
     # -------------------------------------------------------------------------

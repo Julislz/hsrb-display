@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import rclpy
 from rclpy.node import Node
 
@@ -25,14 +24,16 @@ class ImageSubscriber(Node):
         self.get_logger().info(f"ImageSubscriber started and listening on {topic}")
 
         # Create a window one time (prevents flickering)
-        cv2.namedWindow("HSR Display", cv2.WINDOW_NORMAL)
-        cv2.resizeWindow("HSR Display", 800, 600)
+        cv2.namedWindow("HSR Display", cv2.WND_PROP_FULLSCREEN)
+        cv2.setWindowProperty("HSR Display", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     def image_callback(self, msg):
         try:
             image = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
 
             if image is not None:
+                screen_res = (1024, 600)  # screen res of toya/ might need some adjustment
+                image = cv2.resize(image, screen_res, interpolation=cv2.INTER_AREA)
                 cv2.imshow("HSR Display", image)
                 cv2.waitKey(1)
 

@@ -1,31 +1,37 @@
-#!/usr/bin/env python
-import rospy
+#!/usr/bin/env python3
+import rclpy
+from rclpy.node import Node
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import cv2
 
 
-class ImagePublisher:
+class ImagePublisher(Node):
 
-    def __init__(self, topic="/head_display/reveiver"):
+    def __init__(self, topic="/head_display/receiver"):
+        super().__init__('image_publisher')
+
         self.bridge = CvBridge()
 
-        # Create a publisher for the image
-        self.publisher = rospy.Publisher(topic, Image, queue_size=10)
-        print("publisher started")
+        # ROS2 Publisher
+        self.publisher = self.create_publisher(Image, topic, 10)
+        self.get_logger().info("Publisher started")
 
     def publish_image(self, path):
         image = cv2.imread(path)
 
-        print(image)
-
         if image is not None:
-            # Convert the OpenCV image to a ROS image message
-            ros_image = self.bridge.cv2_to_imgmsg(image, "bgr8")
+            ros_image = self.bridge.cv2_to_imgmsg(image, encoding="bgr8")
 
-            # Publish the ROS image message
-            rospy.sleep(1)
-            self.publisher.publish(ros_image)
-            print("published image")
+            # ROS2 Sleep → Timer / or direct sleep from rclpy
+            self.publish_after_delay(1.0, ros_image)
         else:
-            rospy.logerr("Failed to load image: %s", path)
+            self.get_logger().error(f"Failed to load image: {path}")
+
+    def publish_after_delay(self, delay, msg):
+        # Timer to publish after a delay
+        self.create_timer(delay, lambda: self.publish_and_log(msg))
+
+    def publish_and_log(self, msg):
+        self.publisher.publish(msg)
+        self.get_logger().info("Published image")
